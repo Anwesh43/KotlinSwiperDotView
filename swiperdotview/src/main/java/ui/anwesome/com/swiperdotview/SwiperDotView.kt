@@ -22,19 +22,25 @@ class SwiperDotView(ctx:Context):View(ctx) {
         return true
     }
     data class DotMover(var x:Float,var y:Float,var size:Float = 0f,var w:Float = size) {
+        val state = SwiperDotState()
         var updateFns:Array<(Float)->Unit> = arrayOf({scale -> w = size+size*scale},{scale ->
             size = 2*size-size*scale
             x = x+size*scale
         })
+        init {
+            updateFns.forEach {
+                state.addUpdateFn(it)
+            }
+        }
         fun draw(canvas:Canvas,paint:Paint) {
             paint.color = Color.parseColor("#E65100")
-            canvas.drawRoundRect(RectF(x-size/2,y-size/2,x+size/2,y+size/2),size/2,size/2,paint)
+            canvas.drawRoundRect(RectF(x-w/2,y-size/2,x+w/2,y+size/2),w/2,size/2,paint)
         }
         fun update(stopcb:()->Unit) {
-
+            state.update(stopcb)
         }
-        fun startUpdating(statcb:()->Unit) {
-
+        fun startUpdating(startcb:()->Unit) {
+            state.startUpdating(startcb)
         }
     }
     data class SwiperDotState(var scale:Float = 0f,var dir:Float = 0f,var prevScale:Float = 0f,var j:Int = 0,var prevDir:Int = 0) {
