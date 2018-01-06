@@ -23,11 +23,11 @@ class SwiperDotView(ctx:Context):View(ctx) {
         }
         return true
     }
-    data class DotMover(var x:Float,var y:Float,var size:Float = 0f,var w:Float = size) {
+    data class DotMover(var x:Float,var y:Float,var size:Float,var w:Float = 0f,var prevX:Float = x) {
         val state = SwiperDotState()
-        var updateFns:Array<(Float)->Unit> = arrayOf({scale -> w = size+size*scale},{scale ->
-            size = 2*size-size*scale
-            x = x+size*scale
+        var updateFns:Array<(Float)->Unit> = arrayOf({scale -> w = 2*size*scale},{scale ->
+            w = 2*size*(1-scale)
+            x = prevX+2*size*scale
         })
         init {
             updateFns.forEach {
@@ -36,7 +36,13 @@ class SwiperDotView(ctx:Context):View(ctx) {
         }
         fun draw(canvas:Canvas,paint:Paint) {
             paint.color = Color.parseColor("#E65100")
-            canvas.drawRoundRect(RectF(x-w/2,y-size/2,x+w/2,y+size/2),w/2,size/2,paint)
+            canvas.save()
+            canvas.translate(x,y)
+            paint.style = Paint.Style.FILL_AND_STROKE
+            canvas.drawArc(RectF(-size/2,-size/2,size/2,size/2),90f,180f,true,paint)
+            canvas.drawRect(RectF(0f,-size/2,w,size/2),paint)
+            canvas.drawArc(RectF(w-size/2,-size/2,w+size/2,size/2),270f,180f,true,paint)
+            canvas.restore()
         }
         fun update(stopcb:()->Unit) {
             state.update(stopcb)
@@ -45,13 +51,14 @@ class SwiperDotView(ctx:Context):View(ctx) {
             state.startUpdating(startcb)
         }
     }
-    data class SwiperDotState(var scale:Float = 0f,var dir:Float = 0f,var prevScale:Float = 0f,var j:Int = 0,var prevDir:Int = 0) {
+    data class SwiperDotState(var scale:Float = 0f,var dir:Float = 0f,var prevScale:Float = 0f,var j:Int = 0,var prevDir:Int = 1) {
         val updateFns:ConcurrentLinkedQueue<(Float)->Unit> = ConcurrentLinkedQueue()
         fun addUpdateFn(updateFn:(Float)->Unit) {
             updateFns.add(updateFn)
         }
         fun update(stopcb:()->Unit) {
             scale += 0.1f*dir
+            updateFns.at(j)?.invoke(scale)
             if(Math.abs(scale - prevScale) > 1) {
                 scale = prevScale
                 j+=prevDir
@@ -61,12 +68,14 @@ class SwiperDotView(ctx:Context):View(ctx) {
                     prevDir *=-1
                     j += prevDir
                     prevScale = scale
+                    stopcb()
                 }
             }
         }
         fun startUpdating(startcb:()->Unit) {
             if(dir == 0f) {
                 dir = prevDir.toFloat()
+                startcb()
             }
         }
     }
@@ -82,14 +91,15 @@ class SwiperDotView(ctx:Context):View(ctx) {
             canvas.drawColor(Color.parseColor("#212121"))
             dotMover?.draw(canvas,paint)
             time++
+            animator.animate {
+                dotMover?.update {
+                    animator.stop()
+                }
+            }
         }
         fun startUpdating() {
             dotMover?.startUpdating {
-                animator.startAnimation {
-                    dotMover?.update{
-                        animator.stop()
-                    }
-                }
+                animator.startAnimation()
             }
         }
     }
@@ -106,7 +116,7 @@ class SwiperDotView(ctx:Context):View(ctx) {
                 }
             }
         }
-        fun startAnimation(startcb:()->Unit) {
+        fun startAnimation() {
             if(!animated) {
                 animated = true
                 view.postInvalidate()
@@ -125,4 +135,14 @@ class SwiperDotView(ctx:Context):View(ctx) {
             return view
         }
     }
+}
+fun ConcurrentLinkedQueue<(Float)->Unit>.at(j:Int):((Float)->Unit)? {
+    var i = 0
+    forEach {
+        if(i == j) {
+            return it
+        }
+        i++
+    }
+    return null
 }
