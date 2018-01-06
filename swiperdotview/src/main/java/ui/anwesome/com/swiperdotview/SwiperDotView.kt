@@ -70,6 +70,7 @@ class SwiperDotView(ctx:Context):View(ctx) {
     }
     data class SwiperDotRenderer(var view:SwiperDotView,var time:Int = 0) {
         var dotMover:DotMover?=null
+        val animator = Animator(view)
         fun render(canvas:Canvas,paint:Paint) {
             if(time == 0) {
                 val w = canvas.width.toFloat()
@@ -81,7 +82,13 @@ class SwiperDotView(ctx:Context):View(ctx) {
             time++
         }
         fun startUpdating() {
-
+            dotMover?.startUpdating {
+                animator.startAnimation {
+                    dotMover?.update{
+                        animator.stop()
+                    }
+                }
+            }
         }
     }
     data class Animator(var view:SwiperDotView,var animated:Boolean = false) {
