@@ -3,6 +3,7 @@ package ui.anwesome.com.swiperdotview
 /**
  * Created by anweshmishra on 06/01/18.
  */
+import android.app.Activity
 import android.view.*
 import android.content.*
 import android.graphics.*
@@ -114,6 +115,13 @@ class SwiperDotView(ctx:Context):View(ctx) {
             if(animated) {
                 animated = false
             }
+        }
+    }
+    companion object {
+        fun create(activity:Activity):SwiperDotView {
+            val view = SwiperDotView(activity)
+            activity.setContentView(view)
+            return view
         }
     }
 }
