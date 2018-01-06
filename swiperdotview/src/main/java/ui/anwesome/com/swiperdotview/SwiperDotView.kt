@@ -68,4 +68,20 @@ class SwiperDotView(ctx:Context):View(ctx) {
             }
         }
     }
+    data class SwiperDotRenderer(var view:SwiperDotView,var time:Int = 0) {
+        var dotMover:DotMover?=null
+        fun render(canvas:Canvas,paint:Paint) {
+            if(time == 0) {
+                val w = canvas.width.toFloat()
+                val h = canvas.height.toFloat()
+                dotMover = DotMover(w/2-w/10,h/2,w/10)
+            }
+            canvas.drawColor(Color.parseColor("#212121"))
+            dotMover?.draw(canvas,paint)
+            time++
+        }
+        fun startUpdating() {
+
+        }
+    }
 }
